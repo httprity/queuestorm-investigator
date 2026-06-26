@@ -8,6 +8,44 @@ Operational guide for deploying and keeping the service alive during the judging
   root (`app/`, `requirements.txt`, `Dockerfile`, …).
 - A free [Render](https://render.com) account.
 
+## 1b. Run locally from scratch (fallback path)
+
+If the live URL is down, anyone can bring the service up from a clean clone in under a
+minute (Python 3.11 required):
+
+```bash
+# 1. Clone
+git clone https://github.com/httprity/queuestorm-investigator.git
+cd queuestorm-investigator
+
+# 2. Create an isolated environment + install (3 small deps, no ML, no API keys)
+python -m venv .venv
+# Windows: .venv\Scripts\activate   |   *nix/macOS: source .venv/bin/activate
+pip install -r requirements.txt
+
+# 3. Run (binds 0.0.0.0, honours $PORT; defaults to 8000)
+uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+# 4. Verify in a second shell
+curl http://localhost:8000/health
+# -> {"status":"ok"}
+curl -X POST http://localhost:8000/analyze-ticket \
+  -H "Content-Type: application/json" -d @sample_input.json
+```
+
+Optionally confirm correctness with the bundled regression suite:
+
+```bash
+python tests/test_samples.py     # must print ALL PASS: 10/10
+```
+
+Docker alternative (identical result, if Docker is available):
+
+```bash
+docker build -t queuestorm-investigator .
+docker run -e PORT=8000 -p 8000:8000 queuestorm-investigator
+```
+
 ## 2. Deploy on Render (Web Service, free tier)
 
 1. **New → Web Service**, connect the GitHub repo.
@@ -37,7 +75,7 @@ Render free instances sleep after ~15 minutes idle, adding cold-start latency. T
 warm during judging:
 
 1. Go to [cron-job.org](https://cron-job.org) (free).
-2. Create a job hitting `https://<your-app>.onrender.com/health`.
+2. Create a job hitting `https://queuestorm-investigator-9pym.onrender.com/health`.
 3. Schedule: **every 10 minutes**.
 4. Method: `GET`, expected response: `200`.
 
@@ -47,11 +85,11 @@ Enable it shortly before the judging window opens; disable afterwards.
 
 ```bash
 # Health
-curl https://<your-app>.onrender.com/health
+curl https://queuestorm-investigator-9pym.onrender.com/health
 # -> {"status":"ok"}
 
 # Full analysis
-curl -X POST https://<your-app>.onrender.com/analyze-ticket \
+curl -X POST https://queuestorm-investigator-9pym.onrender.com/analyze-ticket \
   -H "Content-Type: application/json" \
   -d '{
         "ticket_id":"TKT-001",
@@ -68,11 +106,11 @@ Confirm: `200`, valid JSON, correct enums, `relevant_transaction_id` present.
 
 ```bash
 # malformed JSON -> 400
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://<app>/analyze-ticket -H "Content-Type: application/json" -d '{not json'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://queuestorm-investigator-9pym.onrender.com/analyze-ticket -H "Content-Type: application/json" -d '{not json'
 # missing complaint -> 400
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://<app>/analyze-ticket -H "Content-Type: application/json" -d '{"ticket_id":"X"}'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://queuestorm-investigator-9pym.onrender.com/analyze-ticket -H "Content-Type: application/json" -d '{"ticket_id":"X"}'
 # empty complaint -> 422
-curl -s -o /dev/null -w "%{http_code}\n" -X POST https://<app>/analyze-ticket -H "Content-Type: application/json" -d '{"ticket_id":"X","complaint":"  "}'
+curl -s -o /dev/null -w "%{http_code}\n" -X POST https://queuestorm-investigator-9pym.onrender.com/analyze-ticket -H "Content-Type: application/json" -d '{"ticket_id":"X","complaint":"  "}'
 ```
 
 ## 5. Local regression before every push

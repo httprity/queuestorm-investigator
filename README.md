@@ -54,7 +54,7 @@ Deployed as a Render Web Service. See `RUNBOOK.md` for full steps.
 
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health check path: `/health`
-- Live URL: `https://<your-app>.onrender.com`  *(fill in after deploy)*
+- Live URL: `https://queuestorm-investigator-9pym.onrender.com`
 
 ## API
 
@@ -124,7 +124,7 @@ tolerate unknown values without erroring):
 `curl` example:
 
 ```bash
-curl -X POST https://<your-app>.onrender.com/analyze-ticket \
+curl -X POST https://queuestorm-investigator-9pym.onrender.com/analyze-ticket \
   -H "Content-Type: application/json" \
   -d @sample_input.json
 ```
