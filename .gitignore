@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+venv/
+.venv/
+.DS_Store
+
+# Organizer reference material (kept locally, not part of the submission repo)
+PROBLEM_STATEMENT.md
+RUBRIC.md
