@@ -63,6 +63,38 @@ _EXAMPLE_RESPONSE = {
 }
 
 
+# Flat, self-contained request schema for the docs (no $ref/$defs, so Swagger
+# resolves it cleanly when embedded in the operation's requestBody).
+_REQUEST_SCHEMA = {
+    "type": "object",
+    "required": ["ticket_id", "complaint"],
+    "properties": {
+        "ticket_id": {"type": "string"},
+        "complaint": {"type": "string"},
+        "language": {"type": "string", "enum": ["en", "bn", "mixed"]},
+        "channel": {"type": "string",
+                    "enum": ["in_app_chat", "call_center", "email", "merchant_portal", "field_agent"]},
+        "user_type": {"type": "string", "enum": ["customer", "merchant", "agent", "unknown"]},
+        "campaign_context": {"type": "string"},
+        "transaction_history": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "transaction_id": {"type": "string"},
+                    "timestamp": {"type": "string"},
+                    "type": {"type": "string"},
+                    "amount": {"type": "number"},
+                    "counterparty": {"type": "string"},
+                    "status": {"type": "string"},
+                },
+            },
+        },
+        "metadata": {"type": "object"},
+    },
+}
+
+
 def _error(status: int, message: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"error": message})
 
@@ -102,7 +134,7 @@ async def root() -> dict:
             "required": True,
             "content": {
                 "application/json": {
-                    "schema": AnalyzeRequest.model_json_schema(),
+                    "schema": _REQUEST_SCHEMA,
                     "example": _EXAMPLE_REQUEST,
                 }
             },
