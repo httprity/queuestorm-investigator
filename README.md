@@ -55,8 +55,16 @@ Deployed as a Render Web Service. See `RUNBOOK.md` for full steps.
 - Start command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
 - Health check path: `/health`
 - Live URL: `https://queuestorm-investigator-9pym.onrender.com`
+- Interactive docs (Swagger UI): https://queuestorm-investigator-9pym.onrender.com/docs
+
+> On Render's free tier the instance spins down when idle, so the first request
+> (including the docs page) can take ~30–60s to wake. A 10-minute health ping
+> keeps it warm; see `RUNBOOK.md`.
 
 ## API
+
+Try it live in the browser via the interactive Swagger UI:
+**https://queuestorm-investigator-9pym.onrender.com/docs**
 
 ### `GET /health`
 
