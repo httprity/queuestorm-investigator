@@ -28,6 +28,41 @@ app = FastAPI(
 )
 
 
+# --- OpenAPI examples (documentation only; do not affect runtime logic) ---
+_EXAMPLE_REQUEST = {
+    "ticket_id": "TKT-001",
+    "complaint": "I sent 5000 taka to a wrong number around 2pm today. Please help me get my money back.",
+    "language": "en",
+    "channel": "in_app_chat",
+    "user_type": "customer",
+    "transaction_history": [
+        {
+            "transaction_id": "TXN-9101",
+            "timestamp": "2026-04-14T14:08:22Z",
+            "type": "transfer",
+            "amount": 5000,
+            "counterparty": "+8801719876543",
+            "status": "completed",
+        }
+    ],
+}
+
+_EXAMPLE_RESPONSE = {
+    "ticket_id": "TKT-001",
+    "relevant_transaction_id": "TXN-9101",
+    "evidence_verdict": "consistent",
+    "case_type": "wrong_transfer",
+    "severity": "high",
+    "department": "dispute_resolution",
+    "agent_summary": "Customer reports sending 5000 BDT via TXN-9101 to +8801719876543, now believed to be the wrong recipient.",
+    "recommended_next_action": "Verify TXN-9101 details with the customer and initiate the wrong-transfer dispute workflow per policy.",
+    "customer_reply": "We have noted your concern about transaction TXN-9101. Please do not share your PIN or OTP with anyone. Our dispute team will review the case and contact you through official support channels.",
+    "human_review_required": True,
+    "confidence": 0.9,
+    "reason_codes": ["wrong_transfer", "transaction_match", "dispute_initiated"],
+}
+
+
 def _error(status: int, message: str) -> JSONResponse:
     return JSONResponse(status_code=status, content={"error": message})
 
@@ -49,7 +84,31 @@ async def root() -> dict:
     return {"service": "queuestorm-investigator", "status": "ok", "endpoint": "POST /analyze-ticket"}
 
 
-@app.post("/analyze-ticket")
+@app.post(
+    "/analyze-ticket",
+    summary="Analyze a support ticket and return an evidence-grounded verdict.",
+    responses={
+        200: {
+            "description": "Successful analysis",
+            "content": {"application/json": {"example": _EXAMPLE_RESPONSE}},
+        },
+        400: {"description": "Malformed JSON or missing required field",
+              "content": {"application/json": {"example": {"error": "malformed JSON"}}}},
+        422: {"description": "Empty / whitespace complaint",
+              "content": {"application/json": {"example": {"error": "complaint must not be empty"}}}},
+    },
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "application/json": {
+                    "schema": AnalyzeRequest.model_json_schema(),
+                    "example": _EXAMPLE_REQUEST,
+                }
+            },
+        }
+    },
+)
 async def analyze_ticket(request: Request) -> JSONResponse:
     # --- read & parse body manually for full control over 400 vs 422 ---
     try:
